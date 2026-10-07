@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { authClient } from '../authClient'
+import { authClient } from '../lib/authClient'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    setLoading(true)
     const { error } = await authClient.signIn.email({ email, password })
+    setLoading(false)
     if (error) setError(error.message ?? 'Login failed')
   }
 
@@ -21,7 +24,7 @@ export default function Login() {
       <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       {error && <p className="error">{error}</p>}
-      <button type="submit">Log in</button>
+      <button type="submit" disabled={loading}>Log in</button>
       <p>
         <Link to="/forgot-password">Forgot password?</Link>
       </p>

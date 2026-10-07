@@ -1,8 +1,10 @@
-import { authClient } from '../authClient'
+import { authClient } from '../lib/authClient'
 
-type Props = { user: { name: string; email: string; role?: string | null } }
+export default function Home() {
+  const { data: session } = authClient.useSession()
+  const user = session?.user
+  if (!user) return null
 
-export default function Home({ user }: Props) {
   return (
     <div className="card">
       <h1>Welcome, {user.name}</h1>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { authClient } from '../authClient'
+import { authClient } from '../lib/authClient'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')

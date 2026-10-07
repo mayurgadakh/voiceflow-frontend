@@ -1,19 +1,22 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { authClient } from '../authClient'
+import { authClient } from '../lib/authClient'
 
 export default function Signup() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
+    setLoading(true)
     const { error } = await authClient.signUp.email({ name, email, password, callbackURL: window.location.origin })
+    setLoading(false)
     if (error) setError(error.message ?? 'Signup failed')
     else setEmailSent(true)
   }
@@ -41,7 +44,7 @@ export default function Signup() {
         required
       />
       {error && <p className="error">{error}</p>}
-      <button type="submit">Create account</button>
+      <button type="submit" disabled={loading}>Create account</button>
       <p>
         Already have an account? <Link to="/login">Log in</Link>
       </p>
