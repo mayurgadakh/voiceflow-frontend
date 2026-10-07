@@ -13,7 +13,7 @@ export default function Signup() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    const { error } = await authClient.signUp.email({ name, email, password, callbackURL: '/' })
+    const { error } = await authClient.signUp.email({ name, email, password, callbackURL: window.location.origin })
     if (error) setError(error.message ?? 'Signup failed')
     else setEmailSent(true)
   }

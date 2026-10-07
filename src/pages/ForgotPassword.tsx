@@ -9,7 +9,7 @@ export default function ForgotPassword() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    await authClient.requestPasswordReset({ email, redirectTo: '/reset-password' })
+    await authClient.requestPasswordReset({ email, redirectTo: `${window.location.origin}/reset-password` })
     setSent(true)
   }
 
