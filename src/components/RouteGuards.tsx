@@ -1,20 +1,24 @@
+import { useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { authClient } from '../lib/authClient'
 
-// Waits for the first session lookup so guards never redirect on a stale "logged out" state
+// useSession flips isPending back to true on every refetch (e.g. tab refocus).
+// Only the very first lookup should block rendering, so latch once it has finished.
 function useSessionGate() {
   const { data: session, isPending } = authClient.useSession()
-  return { session, isPending }
+  const [ready, setReady] = useState(false)
+  if (!ready && !isPending) setReady(true)
+  return { session, ready }
 }
 
 export function ProtectedRoute() {
-  const { session, isPending } = useSessionGate()
-  if (isPending) return <p className="center">Loading...</p>
+  const { session, ready } = useSessionGate()
+  if (!ready) return <p className="center">Loading...</p>
   return session ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 export function GuestRoute() {
-  const { session, isPending } = useSessionGate()
-  if (isPending) return <p className="center">Loading...</p>
+  const { session, ready } = useSessionGate()
+  if (!ready) return <p className="center">Loading...</p>
   return session ? <Navigate to="/" replace /> : <Outlet />
 }
