@@ -1,54 +1,120 @@
+import { Mic } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { StatusBadge } from '../components/Badges'
+import { PageHeader } from '../components/PageHeader'
 import { useCursorList } from '../hooks/useApi'
 import { formatDate, formatDuration } from '../lib/format'
+import { languageName } from '../lib/languages'
 import type { MyFeedback } from '../types'
+
+function RecordButton() {
+  return (
+    <Button asChild>
+      <Link to="/record">
+        <Mic /> Record feedback
+      </Link>
+    </Button>
+  )
+}
 
 export default function Home() {
   const navigate = useNavigate()
   const { items, loading, error, hasMore, loadMore } = useCursorList<MyFeedback>('/feedback')
+  const empty = !loading && !error && items.length === 0
 
   return (
     <>
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>My feedback</h1>
-        <Link to="/record">
-          <button>Record feedback</button>
-        </Link>
-      </div>
+      <PageHeader title="My feedback" description="The voice notes you have submitted." actions={items.length > 0 ? <RecordButton /> : undefined} />
 
-      <div className="panel table-wrap">
-        {error && <p className="error">{error}</p>}
-        {!loading && !error && items.length === 0 && <p className="muted">Nothing yet. Record your first feedback.</p>}
-        {items.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Submitted</th>
-                <th>Length</th>
-                <th>What we heard</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {empty ? (
+        <Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Mic />
+              </EmptyMedia>
+              <EmptyTitle>No feedback yet</EmptyTitle>
+              <EmptyDescription>Record a short voice note about your experience. It takes under a minute.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <RecordButton />
+            </EmptyContent>
+          </Empty>
+        </Card>
+      ) : (
+        <Card className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="pl-4">What you said</TableHead>
+                <TableHead className="hidden sm:table-cell">Length</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead className="pr-4">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {items.map((item) => (
-                <tr key={item.id} className="clickable" onClick={() => navigate(`/feedback/${item.id}`)}>
-                  <td>
-                    <Link to={`/feedback/${item.id}`}>{formatDate(item.createdAt)}</Link>
-                  </td>
-                  <td>{formatDuration(item.durationMs)}</td>
-                  <td className="preview">{item.transcription?.englishText ?? '-'}</td>
-                  <td>
+                <TableRow key={item.id} className="cursor-pointer" onClick={() => navigate(`/feedback/${item.id}`)}>
+                  <TableCell className="max-w-xs pl-4 whitespace-normal">
+                    <Link to={`/feedback/${item.id}`} className="line-clamp-2 font-medium hover:underline">
+                      {item.transcription?.englishText ?? (
+                        <span className="font-normal text-muted-foreground">
+                          {item.status === 'FAILED' || item.status === 'EXPIRED' ? 'Could not be processed' : 'Waiting for transcript'}
+                        </span>
+                      )}
+                    </Link>
+                    {item.transcription?.languageCode && (
+                      <span className="text-xs text-muted-foreground">{languageName(item.transcription.languageCode)}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground tabular-nums sm:table-cell">{formatDuration(item.durationMs)}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>
+                  <TableCell className="pr-4">
                     <StatusBadge status={item.status} />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        )}
-        {loading && <p className="muted">Loading...</p>}
-        {hasMore && !loading && <button onClick={loadMore}>Load more</button>}
-      </div>
+              {loading &&
+                items.length === 0 &&
+                Array.from({ length: 3 }, (_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="pl-4">
+                      <Skeleton className="h-4 w-56" />
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Skeleton className="h-4 w-10" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-20" />
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <Skeleton className="h-5 w-20" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+          {hasMore && (
+            <div className="border-t p-3">
+              <Button variant="ghost" size="sm" onClick={loadMore} disabled={loading}>
+                Load more
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
     </>
   )
 }

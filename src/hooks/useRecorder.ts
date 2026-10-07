@@ -12,6 +12,8 @@ export function useRecorder() {
   const [seconds, setSeconds] = useState(0)
   const [recording, setRecording] = useState<Recording | null>(null)
   const [error, setError] = useState('')
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
   const timerRef = useRef<number>(0)
 
@@ -20,6 +22,12 @@ export function useRecorder() {
       if (prev) URL.revokeObjectURL(prev.url)
       return null
     })
+  }, [])
+
+  const closeAnalyser = useCallback(() => {
+    void audioContextRef.current?.close()
+    audioContextRef.current = null
+    setAnalyser(null)
   }, [])
 
   const stop = useCallback(() => {
@@ -47,9 +55,21 @@ export function useRecorder() {
     const chunks: Blob[] = []
     const startedAt = Date.now()
 
+    // A live level feed for the waveform. Safari still ships the prefixed AudioContext
+    const AudioContextClass = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (AudioContextClass) {
+      const context = new AudioContextClass()
+      const node = context.createAnalyser()
+      node.fftSize = 512
+      context.createMediaStreamSource(stream).connect(node)
+      audioContextRef.current = context
+      setAnalyser(node)
+    }
+
     recorder.ondataavailable = (e) => chunks.push(e.data)
     recorder.onstop = () => {
       stream.getTracks().forEach((track) => track.stop())
+      closeAnalyser()
       setIsRecording(false)
       const durationMs = Math.min(Date.now() - startedAt, MAX_SECONDS * 1000)
       if (durationMs < MIN_MS) {
@@ -70,7 +90,7 @@ export function useRecorder() {
       setSeconds(elapsed)
       if (elapsed >= MAX_SECONDS) stop()
     }, 250)
-  }, [discard, stop])
+  }, [closeAnalyser, discard, stop])
 
   // Release the microphone if the page is left mid-recording
   useEffect(() => () => {
@@ -80,7 +100,8 @@ export function useRecorder() {
       recorderRef.current.stream.getTracks().forEach((track) => track.stop())
       recorderRef.current.stop()
     }
+    void audioContextRef.current?.close()
   }, [])
 
-  return { isRecording, seconds, recording, error, start, stop, discard }
+  return { isRecording, seconds, recording, error, analyser, start, stop, discard }
 }
