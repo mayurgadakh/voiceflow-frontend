@@ -22,3 +22,17 @@ export function GuestRoute() {
   if (!ready) return <p className="center">Loading...</p>
   return session ? <Navigate to="/" replace /> : <Outlet />
 }
+
+// Convenience only: the API enforces admin access on every request
+export function AdminRoute() {
+  const { session, ready } = useSessionGate()
+  if (!ready) return <p className="center">Loading...</p>
+  return session?.user.role === 'admin' ? <Outlet /> : <Navigate to="/" replace />
+}
+
+// Recording and "my feedback" are for customers. Admins work from /admin
+export function CustomerRoute() {
+  const { session, ready } = useSessionGate()
+  if (!ready) return <p className="center">Loading...</p>
+  return session?.user.role === 'admin' ? <Navigate to="/admin" replace /> : <Outlet />
+}
