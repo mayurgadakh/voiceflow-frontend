@@ -7,6 +7,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   SPEECH_REJECTED: 'The recording could not be read by our speech service.',
   ANALYSIS_INVALID: 'The sentiment analysis returned an invalid result.',
   PROCESSING_FAILED: 'Processing failed after several attempts.',
+  UPLOAD_EXPIRED: 'The upload was never completed. Please record again.',
 }
 
 export const formatDate = (iso: string) =>
